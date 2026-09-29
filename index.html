@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apex Motors | Car Showroom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="config.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { ink: "#101418", concrete: "#E9ECEE", signal: "#1F4BFF" },
+          fontFamily: {
+            display: ['"Bricolage Grotesque"', "sans-serif"],
+            body: ['"Instrument Sans"', "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    #heroCar svg path.body { transition: fill .35s ease; }
+  </style>
+</head>
+<body class="font-body bg-concrete text-ink antialiased">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-concrete/90 backdrop-blur border-b border-ink/10">
+    <div class="mx-auto max-w-6xl flex items-center justify-between px-5 py-4">
+      <a href="#top" class="font-display text-xl font-extrabold tracking-tight">Apex Motors</a>
+      <nav class="flex items-center gap-6 text-sm font-medium">
+        <a href="#cars" class="hover:text-signal">Cars</a>
+        <a href="#visit" class="hover:text-signal">Visit us</a>
+        <button id="headerAsk" class="rounded-full bg-ink text-white px-4 py-2 hover:bg-signal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
+          Ask our assistant
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- Hero -->
+    <section class="mx-auto max-w-6xl px-5 pt-14 pb-16 grid lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <h1 class="font-display font-extrabold text-5xl sm:text-6xl leading-[1.02] tracking-tight">
+          Every car inspected.<br />Every price on the tag.
+        </h1>
+        <p class="mt-5 text-lg text-ink/70 max-w-md">
+          Browse our current stock, or tell our assistant your budget and it will point you to the right car.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="#cars" class="rounded-full bg-signal text-white px-6 py-3 font-semibold hover:bg-ink transition">Browse cars</a>
+          <button id="heroAsk" class="rounded-full border border-ink/25 px-6 py-3 font-semibold hover:border-ink transition">Talk to the assistant</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div id="heroCar" class="w-full"></div>
+        <div class="mt-4 flex items-center justify-between">
+          <p class="text-sm text-ink/60">Paint: <span id="heroColorName" class="font-semibold text-ink">Pearl White</span></p>
+          <div id="swatches" class="flex gap-2" role="group" aria-label="Choose paint color"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inventory -->
+    <section id="cars" class="mx-auto max-w-6xl px-5 pb-20">
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <h2 class="font-display text-3xl font-extrabold tracking-tight">Cars in stock</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          <div id="filters" class="flex gap-2"></div>
+          <select id="sort" class="rounded-full border border-ink/20 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-signal">
+            <option value="default">Sort: Featured</option>
+            <option value="low">Price: Low to high</option>
+            <option value="high">Price: High to low</option>
+          </select>
+        </div>
+      </div>
+      <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- Visit -->
+    <section id="visit" class="bg-ink text-white">
+      <div class="mx-auto max-w-6xl px-5 py-16 grid md:grid-cols-3 gap-10">
+        <div class="md:col-span-1">
+          <h2 class="font-display text-3xl font-extrabold tracking-tight">Come see the car in person</h2>
+        </div>
+        <div class="text-white/80 space-y-1">
+          <p class="font-semibold text-white">Showroom</p>
+          <p>Your showroom address here</p>
+        </div>
+        <div class="text-white/80 space-y-1">
+          <p class="font-semibold text-white">Hours and phone</p>
+          <p>Mon to Sat, 10am to 7pm</p>
+          <p>+92 300 0000000</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="text-center text-sm text-ink/50 py-6">&copy; <span id="year"></span> Apex Motors</footer>
+
+  <!-- Chat launcher -->
+  <button id="chatToggle"
+    class="fixed bottom-5 right-5 z-40 rounded-full bg-signal text-white font-semibold px-5 py-3 shadow-lg hover:bg-ink transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+    Ask AI
+  </button>
+
+  <!-- Chat panel -->
+  <div id="chatPanel" class="hidden fixed bottom-20 right-5 z-40 w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between bg-ink text-white px-4 py-3">
+      <div>
+        <p class="font-display font-bold leading-tight">Apex assistant</p>
+        <p class="text-xs text-white/60">Ask about cars, prices, test drives</p>
+      </div>
+      <button id="chatClose" aria-label="Close chat" class="text-2xl leading-none px-2 hover:text-signal">&times;</button>
+    </div>
+
+    <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-concrete/50"></div>
+
+    <div id="quick" class="px-3 pt-2 flex flex-wrap gap-2">
+      <button class="quick rounded-full border border-ink/20 px-3 py-1 text-xs hover:border-signal hover:text-signal">Best family SUV?</button>
+      <button class="quick rounded-full border border-ink/20 px-3 py-1 text-xs hover:border-signal hover:text-signal">Mera budget 60 lakh hai</button>
+      <button class="quick rounded-full border border-ink/20 px-3 py-1 text-xs hover:border-signal hover:text-signal">Book a test drive</button>
+    </div>
+
+    <div class="p-3 flex gap-2">
+      <input id="chatInput" type="text" placeholder="Type your question..." autocomplete="off"
+        class="flex-1 rounded-full border border-ink/20 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-signal" />
+      <button id="chatSend" class="rounded-full bg-signal text-white px-4 py-2 text-sm font-semibold hover:bg-ink transition disabled:opacity-50">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // ================= SETTINGS =================
+    const GROQ_API_KEY = (window.APP_CONFIG && window.APP_CONFIG.GROQ_API_KEY) || "YOUR_GROQ_API_KEY"; // console.groq.com se key banao
+    const GROQ_MODEL = "openai/gpt-oss-20b";
+    const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+    const SHOWROOM = {
+      name: "Apex Motors",
+      address: "Your showroom address here",
+      hours: "Mon to Sat, 10am to 7pm",
+      phone: "+92 300 0000000",
+    };
+
+    // Sample stock: apni real cars aur prices yahan daalo
+   const cars = [
+  { id: 1, name: "Toyota Corolla Altis X", year: 2022, type: "Sedan", price: 8900000, km: 32000, trans: "Automatic", color: "#E8E8E6", colorName: "Super White", image: "images/corolla.jpg" },
+  { id: 2, name: "Honda Civic Oriel", year: 2021, type: "Sedan", price: 9450000, km: 41000, trans: "Automatic", color: "#1E3A5F", colorName: "Midnight Blue", image: "images/civic.jpg" },
+  { id: 3, name: "Suzuki Alto VXL AGS", year: 2023, type: "Hatchback", price: 3350000, km: 12000, trans: "Automatic", color: "#C0392B", colorName: "Red", image: "images/alto.jpg" },
+  { id: 4, name: "Honda City Aspire", year: 2022, type: "Sedan", price: 5900000, km: 28000, trans: "Automatic", color: "#8A9299", colorName: "Titanium Grey", image: "images/city.jpg" },
+  { id: 5, name: "Kia Sportage Alpha", year: 2022, type: "SUV", price: 7800000, km: 36000, trans: "Automatic", color: "#1A1D21", colorName: "Black", image: "images/sportage.jpg" },
+  { id: 6, name: "Toyota Yaris ATIV", year: 2021, type: "Sedan", price: 5100000, km: 45000, trans: "Automatic", color: "#9C7A4B", colorName: "Bronze", image: "images/yaris.jpg" },
+  { id: 7, name: "Hyundai Tucson AWD", year: 2023, type: "SUV", price: 10800000, km: 18000, trans: "Automatic", color: "#F2F2F0", colorName: "Pearl White", image: "images/tucson.jpg" },
+  { id: 8, name: "Suzuki Swift DLX", year: 2022, type: "Hatchback", price: 4300000, km: 30000, trans: "Manual", color: "#D6A21E", colorName: "Yellow", image: "images/swift.jpg" },
+];
+
+    const fmtPrice = (n) => "PKR " + n.toLocaleString("en-PK");
+    const fmtKm = (n) => n.toLocaleString("en-PK") + " km";
+
+    // ================= CAR DRAWING =================
+    const shapes = {
+      Sedan: {
+        body: "M16 88 L16 76 Q16 68 28 66 L74 60 Q92 38 126 36 L184 36 Q214 38 230 60 L272 66 Q284 68 284 78 L284 88 Z",
+        win: "M88 60 Q102 44 128 42 L150 42 L150 60 Z M156 42 L184 42 Q206 44 220 60 L156 60 Z",
+      },
+      SUV: {
+        body: "M16 88 L16 72 Q16 64 28 62 L60 58 Q72 32 100 30 L214 30 Q240 32 250 56 L272 62 Q284 64 284 76 L284 88 Z",
+        win: "M78 58 Q88 40 104 38 L146 38 L146 58 Z M152 38 L212 38 Q230 40 240 58 L152 58 Z",
+      },
+      Hatchback: {
+        body: "M16 88 L16 74 Q16 66 28 64 L64 60 Q80 36 110 34 L196 34 Q226 36 242 62 L272 66 Q284 68 284 78 L284 88 Z",
+        win: "M84 60 Q94 42 112 40 L146 40 L146 60 Z M152 40 L194 40 Q216 42 230 60 L152 60 Z",
+      },
+    };
+
+    function carSVG(type, color) {
+      const s = shapes[type] || shapes.Sedan;
+      return `
+        <svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${type} car">
+          <ellipse cx="150" cy="108" rx="122" ry="5" fill="#101418" opacity=".12"/>
+          <path class="body" d="${s.body}" fill="${color}" stroke="#101418" stroke-opacity=".25" stroke-width="1.2"/>
+          <path d="${s.win}" fill="#101418" opacity=".78"/>
+          <rect x="16" y="82" width="268" height="6" fill="#101418" opacity=".18"/>
+          <circle cx="76" cy="90" r="16" fill="#101418"/><circle cx="76" cy="90" r="7" fill="#C9CFD4"/>
+          <circle cx="224" cy="90" r="16" fill="#101418"/><circle cx="224" cy="90" r="7" fill="#C9CFD4"/>
+        </svg>`;
+    }
+
+    // ================= HERO COLOR SWATCHES =================
+    const heroColors = [
+      { name: "Pearl White", hex: "#F2F2F0" },
+      { name: "Midnight Blue", hex: "#1E3A5F" },
+      { name: "Red", hex: "#C0392B" },
+      { name: "Titanium Grey", hex: "#8A9299" },
+      { name: "Yellow", hex: "#D6A21E" },
+      { name: "Black", hex: "#1A1D21" },
+    ];
+    const heroCar = document.getElementById("heroCar");
+    const heroColorName = document.getElementById("heroColorName");
+    const swatches = document.getElementById("swatches");
+
+    function setHero(c) {
+      heroCar.innerHTML = carSVG("SUV", c.hex);
+      heroColorName.textContent = c.name;
+    }
+    heroColors.forEach((c, i) => {
+      const b = document.createElement("button");
+      b.setAttribute("aria-label", c.name);
+      b.className = "h-6 w-6 rounded-full border border-ink/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal";
+      b.style.background = c.hex;
+      b.onclick = () => setHero(c);
+      swatches.appendChild(b);
+      if (i === 0) setHero(c);
+    });
+
+    // ================= INVENTORY =================
+    const grid = document.getElementById("grid");
+    const filtersEl = document.getElementById("filters");
+    const sortEl = document.getElementById("sort");
+    let activeType = "All";
+
+    ["All", "Sedan", "SUV", "Hatchback"].forEach((t) => {
+      const b = document.createElement("button");
+      b.textContent = t;
+      b.dataset.type = t;
+      b.className = "chip rounded-full px-4 py-2 text-sm font-medium border transition";
+      b.onclick = () => { activeType = t; renderCars(); };
+      filtersEl.appendChild(b);
+    });
+
+    function renderCars() {
+      filtersEl.querySelectorAll(".chip").forEach((b) => {
+        const on = b.dataset.type === activeType;
+        b.className = "chip rounded-full px-4 py-2 text-sm font-medium border transition " +
+          (on ? "bg-ink text-white border-ink" : "bg-white border-ink/20 hover:border-ink");
+      });
+
+      let list = cars.filter((c) => activeType === "All" || c.type === activeType);
+      if (sortEl.value === "low") list = [...list].sort((a, b) => a.price - b.price);
+      if (sortEl.value === "high") list = [...list].sort((a, b) => b.price - a.price);
+
+      grid.innerHTML = list.map((c) => `
+        <article class="bg-white rounded-2xl p-5 flex flex-col">
+          <div class="rounded-xl bg-concrete/70 overflow-hidden">
+            <img src="${c.image}" alt="${c.year} ${c.name} in ${c.colorName}" loading="lazy"
+              class="w-full aspect-[3/2] object-cover"
+              onerror="this.parentElement.classList.add('px-4','pt-4'); this.outerHTML = carSVG('${c.type}','${c.color}')" />
+          </div>
+          <div class="mt-4 flex-1">
+            <h3 class="font-display text-lg font-bold leading-tight">${c.year} ${c.name}</h3>
+            <p class="mt-1 text-sm text-ink/60 flex items-center gap-2">
+              <span class="inline-block h-3 w-3 rounded-full border border-ink/30" style="background:${c.color}"></span>
+              ${c.colorName} &middot; ${c.type}
+            </p>
+            <p class="mt-1 text-sm text-ink/60">${fmtKm(c.km)} &middot; ${c.trans}</p>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <p class="font-display text-xl font-extrabold">${fmtPrice(c.price)}</p>
+            <button data-ask="${c.id}" class="ask rounded-full border border-ink/25 px-3 py-1.5 text-sm font-medium hover:border-signal hover:text-signal">Ask AI</button>
+          </div>
+        </article>`).join("");
+
+      grid.querySelectorAll(".ask").forEach((btn) => {
+        btn.onclick = () => {
+          const c = cars.find((x) => x.id == btn.dataset.ask);
+          openChat();
+          sendMessage(`Tell me about the ${c.year} ${c.name}`);
+        };
+      });
+    }
+    sortEl.onchange = renderCars;
+    renderCars();
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // ================= AI ASSISTANT (GROQ) =================
+    const panel = document.getElementById("chatPanel");
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("chatSend");
+    const history = [];
+    let busy = false;
+
+    const inventoryText = cars
+      .map((c) => `- ${c.year} ${c.name} | ${c.type} | ${c.colorName} | ${c.km} km | ${c.trans} | Petrol | PKR ${c.price}`)
+      .join("\n");
+
+    const systemPrompt = `You are the virtual sales assistant of ${SHOWROOM.name}, a used-car showroom.
+Rules:
+- Reply in the same language the customer writes in (English, Urdu, or Roman Urdu).
+- Keep replies short: 2 to 4 sentences. Use plain text, no markdown.
+- Only recommend cars from the inventory below. Never invent cars, prices, features or discounts. If you don't know something, say the sales team will confirm it.
+- Prices are in PKR. Convert lakh/crore when the customer uses them (1 lakh = 100,000; 1 crore = 10,000,000).
+- Encourage the customer to visit or book a test drive.
+- Showroom: ${SHOWROOM.address}. Hours: ${SHOWROOM.hours}. Phone: ${SHOWROOM.phone}.
+Inventory:
+${inventoryText}`;
+
+    function addBubble(text, who) {
+      const div = document.createElement("div");
+      div.className = "max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap " +
+        (who === "user" ? "ml-auto bg-signal text-white" : "mr-auto bg-white border border-ink/10");
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return div;
+    }
+
+    async function sendMessage(text) {
+      text = (text || "").trim();
+      if (!text || busy) return;
+      busy = true;
+      sendBtn.disabled = true;
+
+      addBubble(text, "user");
+      history.push({ role: "user", content: text });
+      const bubble = addBubble("...", "bot");
+
+      try {
+        if (GROQ_API_KEY.startsWith("YOUR_")) {
+          throw new Error("Groq API key is not set in the code.");
+        }
+        const res = await fetch(GROQ_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + GROQ_API_KEY,
+          },
+          body: JSON.stringify({
+            model: GROQ_MODEL,
+            messages: [{ role: "system", content: systemPrompt }, ...history.slice(-10)],
+            temperature: 0.5,
+            max_tokens: 1500,
+            reasoning_effort: "low",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || "Request failed");
+
+        const reply = (data.choices[0].message.content || "").trim() || "Sorry, I could not answer that. Please try again.";
+        bubble.textContent = reply;
+        history.push({ role: "assistant", content: reply });
+      } catch (err) {
+        console.error(err);
+        bubble.textContent = "Sorry, the assistant is unavailable right now. (" + err.message + ")";
+        history.pop();
+      }
+
+      busy = false;
+      sendBtn.disabled = false;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function openChat() {
+      panel.classList.remove("hidden");
+      inputEl.focus();
+    }
+    function toggleChat() {
+      panel.classList.contains("hidden") ? openChat() : panel.classList.add("hidden");
+    }
+
+    addBubble("Assalam o Alaikum! I can help you find a car, compare prices, or book a test drive. What are you looking for?", "bot");
+
+    document.getElementById("chatToggle").onclick = toggleChat;
+    document.getElementById("chatClose").onclick = () => panel.classList.add("hidden");
+    document.getElementById("headerAsk").onclick = openChat;
+    document.getElementById("heroAsk").onclick = openChat;
+    sendBtn.onclick = () => { const t = inputEl.value; inputEl.value = ""; sendMessage(t); };
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); sendBtn.click(); }
+    });
+    document.querySelectorAll(".quick").forEach((b) => (b.onclick = () => sendMessage(b.textContent)));
+  </script>
+</body>
+</html>
+
+
+
+

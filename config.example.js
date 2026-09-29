@@ -1,0 +1,1 @@
+﻿window.APP_CONFIG = { GROQ_API_KEY: "YOUR_GROQ_API_KEY" };
