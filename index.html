@@ -1,22 +1,30 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Apex Motors | Car Showroom</title>
+  <title>Apex Motors | Inspected used cars</title>
+  <meta name="description" content="Inspected used cars with the price shown upfront. Browse stock, book a test drive or ask our assistant." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: { ink: "#101418", concrete: "#E9ECEE", signal: "#1F4BFF" },
+          colors: {
+            ink: "#0B1F3A",        // navy: headers, hero, footer
+            brand: { DEFAULT: "#1F5FD6", dark: "#194EB3" }, // buttons and highlights
+            floor: "#F2F5F9",      // light page background
+            line: "#DCE2EC",       // borders and image backgrounds
+            muted: "#5B6B82",      // secondary text
+          },
           fontFamily: {
-            display: ['"Bricolage Grotesque"', "sans-serif"],
-            body: ['"Instrument Sans"', "sans-serif"],
+            display: ["Unbounded", "sans-serif"],
+            body: ["Manrope", "sans-serif"],
           },
         },
       },
@@ -24,123 +32,283 @@
   </script>
   <style>
     html { scroll-behavior: smooth; }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-    #heroCar svg path.body { transition: fill .35s ease; }
+
+    /* Page width: fills the screen, with comfortable side space that grows a little on big monitors */
+    .wrap { width: 100%; max-width: 1760px; margin-inline: auto; padding-inline: clamp(1.25rem, 4vw, 4.5rem); }
+
+    :focus-visible { outline: 2px solid #1F5FD6; outline-offset: 2px; }
+    .on-dark :focus-visible { outline-color: #8DB4FF; }
+    .on-dark .light :focus-visible { outline-color: #1F5FD6; }
+    dialog { border: 0; padding: 0; }
+    dialog::backdrop { background: rgba(11, 31, 58, 0.65); }
+
+    /* One page-load moment: the hero photo slides open */
+    @keyframes reveal { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+    .reveal { animation: reveal 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { animation: none; }
+    }
   </style>
 </head>
-<body class="font-body bg-concrete text-ink antialiased">
+<body class="font-body bg-floor text-ink antialiased">
+
+  <!-- Top bar -->
+  <div class="bg-[#081831] text-white/75 text-sm on-dark">
+    <div class="wrap py-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
+      <p>Open <span data-fill="hours"></span></p>
+      <a data-tel class="hover:text-white"><span data-fill="phone"></span></a>
+    </div>
+  </div>
 
   <!-- Header -->
-  <header class="sticky top-0 z-30 bg-concrete/90 backdrop-blur border-b border-ink/10">
-    <div class="mx-auto max-w-6xl flex items-center justify-between px-5 py-4">
-      <a href="#top" class="font-display text-xl font-extrabold tracking-tight">Apex Motors</a>
-      <nav class="flex items-center gap-6 text-sm font-medium">
-        <a href="#cars" class="hover:text-signal">Cars</a>
-        <a href="#visit" class="hover:text-signal">Visit us</a>
-        <button id="headerAsk" class="rounded-full bg-ink text-white px-4 py-2 hover:bg-signal transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
-          Ask our assistant
-        </button>
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-line">
+    <div class="wrap py-3.5 flex items-center justify-between gap-6">
+      <a href="#top" class="flex items-center gap-2.5 font-display font-semibold text-lg">
+        <span class="h-8 w-8 rounded-lg bg-brand grid place-items-center" aria-hidden="true">
+          <span class="h-2.5 w-2.5 bg-white rotate-45"></span>
+        </span>
+        Apex Motors
+      </a>
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold" aria-label="Main">
+        <a href="#cars" class="hover:text-brand">Cars in stock</a>
+        <a href="#visit" class="hover:text-brand">Book a visit</a>
+        <a href="#contact" class="hover:text-brand">Contact</a>
       </nav>
+      <div class="flex items-center gap-2">
+        <button id="headerAsk" class="hidden sm:inline-flex rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:border-ink">Ask the assistant</button>
+        <a href="#visit" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">Book a visit</a>
+      </div>
     </div>
   </header>
 
   <main id="top">
 
     <!-- Hero -->
-    <section class="mx-auto max-w-6xl px-5 pt-14 pb-16 grid lg:grid-cols-2 gap-10 items-center">
-      <div>
-        <h1 class="font-display font-extrabold text-5xl sm:text-6xl leading-[1.02] tracking-tight">
-          Every car inspected.<br />Every price on the tag.
-        </h1>
-        <p class="mt-5 text-lg text-ink/70 max-w-md">
-          Browse our current stock, or tell our assistant your budget and it will point you to the right car.
-        </p>
-        <div class="mt-8 flex flex-wrap gap-3">
-          <a href="#cars" class="rounded-full bg-signal text-white px-6 py-3 font-semibold hover:bg-ink transition">Browse cars</a>
-          <button id="heroAsk" class="rounded-full border border-ink/25 px-6 py-3 font-semibold hover:border-ink transition">Talk to the assistant</button>
+    <section class="bg-ink text-white on-dark">
+      <div class="wrap py-12 lg:py-20 grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+        <div class="lg:col-span-5">
+          <h1 class="font-display font-semibold text-4xl sm:text-5xl 2xl:text-6xl leading-[1.1] tracking-tight">
+            Inspected used cars, priced openly.
+          </h1>
+          <p class="mt-5 text-lg text-white/70 max-w-xl">
+            Every car in stock is checked before it is listed. Set your budget and see what fits.
+          </p>
+
+          <form id="finder" class="light mt-8 bg-white text-ink rounded-2xl p-5 sm:p-6" onsubmit="return false">
+            <div class="flex items-baseline justify-between gap-4">
+              <label for="heroBudget" class="text-sm font-semibold">Maximum budget</label>
+              <output id="budgetLabel" for="heroBudget" class="font-display text-base font-semibold"></output>
+            </div>
+            <input id="heroBudget" type="range" min="2000000" max="12000000" step="250000" value="12000000" class="mt-3 w-full accent-brand" />
+
+            <div class="mt-5 grid sm:grid-cols-2 gap-4">
+              <div>
+                <label for="heroType" class="block text-sm font-semibold mb-1.5">Body type</label>
+                <select id="heroType" class="w-full rounded-lg border border-line bg-floor px-3 py-2.5 text-sm">
+                  <option value="All">All body types</option>
+                  <option value="Sedan">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Hatchback">Hatchback</option>
+                </select>
+              </div>
+              <div>
+                <label for="heroGear" class="block text-sm font-semibold mb-1.5">Gearbox</label>
+                <select id="heroGear" class="w-full rounded-lg border border-line bg-floor px-3 py-2.5 text-sm">
+                  <option value="Any">Any gearbox</option>
+                  <option value="Automatic">Automatic</option>
+                  <option value="Manual">Manual</option>
+                </select>
+              </div>
+            </div>
+
+            <a id="showBtn" href="#cars" class="mt-6 flex items-center justify-center rounded-xl bg-brand px-5 py-3.5 font-semibold text-white hover:bg-brand-dark"></a>
+          </form>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div id="heroPhoto" class="reveal relative rounded-3xl overflow-hidden bg-[#13294A] aspect-[16/11]"></div>
         </div>
       </div>
+    </section>
 
-      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm">
-        <div id="heroCar" class="w-full"></div>
-        <div class="mt-4 flex items-center justify-between">
-          <p class="text-sm text-ink/60">Paint: <span id="heroColorName" class="font-semibold text-ink">Pearl White</span></p>
-          <div id="swatches" class="flex gap-2" role="group" aria-label="Choose paint color"></div>
+    <!-- Assurances -->
+    <section class="bg-white border-b border-line" aria-label="How we sell">
+      <div class="wrap grid md:grid-cols-3 md:divide-x divide-line">
+        <div class="flex gap-4 py-7 md:pr-10">
+          <svg class="h-7 w-7 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+          <div>
+            <h2 class="font-semibold">Checked before listing</h2>
+            <p class="mt-1 text-sm text-muted">Each car gets a mechanical and body inspection before it goes on sale.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 py-7 md:px-10">
+          <svg class="h-7 w-7 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg>
+          <div>
+            <h2 class="font-semibold">Papers verified</h2>
+            <p class="mt-1 text-sm text-muted">Registration and ownership documents are confirmed before you pay.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 py-7 md:pl-10">
+          <svg class="h-7 w-7 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 12v9M3 12h6M15 12h6"/></svg>
+          <div>
+            <h2 class="font-semibold">Drive it first</h2>
+            <p class="mt-1 text-sm text-muted">Test drives are free. Book a time or walk in during opening hours.</p>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Inventory -->
-    <section id="cars" class="mx-auto max-w-6xl px-5 pb-20">
-      <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
-        <h2 class="font-display text-3xl font-extrabold tracking-tight">Cars in stock</h2>
+    <section id="cars" class="wrap py-16 scroll-mt-24">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 class="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Cars in stock</h2>
+          <p id="resultCount" class="mt-1 text-muted" aria-live="polite"></p>
+        </div>
         <div class="flex flex-wrap items-center gap-3">
-          <div id="filters" class="flex gap-2"></div>
-          <select id="sort" class="rounded-full border border-ink/20 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-signal">
+          <div id="chips" class="flex flex-wrap gap-2" role="group" aria-label="Body type"></div>
+          <select id="sort" aria-label="Sort cars" class="rounded-full border border-line bg-white px-4 py-2 text-sm">
             <option value="default">Sort: Featured</option>
             <option value="low">Price: Low to high</option>
             <option value="high">Price: High to low</option>
+            <option value="km">Lowest mileage</option>
           </select>
         </div>
       </div>
-      <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+      <div id="grid" class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6"></div>
+
+      <div id="empty" class="hidden mt-8 rounded-2xl border border-dashed border-muted/40 bg-white p-10 text-center">
+        <p class="font-semibold">No cars match these filters.</p>
+        <p class="mt-1 text-muted">Raise your budget or clear the filters to see everything in stock.</p>
+        <button data-reset class="mt-5 rounded-lg bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-ink/90">Clear filters</button>
+      </div>
     </section>
 
-    <!-- Visit -->
-    <section id="visit" class="bg-ink text-white">
-      <div class="mx-auto max-w-6xl px-5 py-16 grid md:grid-cols-3 gap-10">
-        <div class="md:col-span-1">
-          <h2 class="font-display text-3xl font-extrabold tracking-tight">Come see the car in person</h2>
+    <!-- Book a visit -->
+    <section id="visit" class="bg-white border-y border-line scroll-mt-16">
+      <div class="wrap py-16 sm:py-20 grid lg:grid-cols-12 gap-12 lg:gap-16">
+        <div class="lg:col-span-5">
+          <h2 class="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Book a visit or test drive</h2>
+          <p class="mt-4 text-muted max-w-md">Tell us which car you like and when you can come. We will have it ready for you.</p>
+
+          <ol class="mt-8 space-y-5">
+            <li class="flex gap-4">
+              <span class="h-8 w-8 shrink-0 rounded-full bg-ink text-white grid place-items-center text-sm font-semibold">1</span>
+              <p><span class="font-semibold">Pick a car and a day.</span> <span class="text-muted">Use the form, or message us directly.</span></p>
+            </li>
+            <li class="flex gap-4">
+              <span class="h-8 w-8 shrink-0 rounded-full bg-ink text-white grid place-items-center text-sm font-semibold">2</span>
+              <p><span class="font-semibold">Inspect and drive it.</span> <span class="text-muted">Take your time, bring a mechanic if you like.</span></p>
+            </li>
+            <li class="flex gap-4">
+              <span class="h-8 w-8 shrink-0 rounded-full bg-ink text-white grid place-items-center text-sm font-semibold">3</span>
+              <p><span class="font-semibold">Check the papers.</span> <span class="text-muted">We go through registration and ownership with you.</span></p>
+            </li>
+            <li class="flex gap-4">
+              <span class="h-8 w-8 shrink-0 rounded-full bg-ink text-white grid place-items-center text-sm font-semibold">4</span>
+              <p><span class="font-semibold">Pay and drive home.</span> <span class="text-muted">Transfer support is included.</span></p>
+            </li>
+          </ol>
         </div>
-        <div class="text-white/80 space-y-1">
-          <p class="font-semibold text-white">Showroom</p>
-          <p>Your showroom address here</p>
-        </div>
-        <div class="text-white/80 space-y-1">
-          <p class="font-semibold text-white">Hours and phone</p>
-          <p>Mon to Sat, 10am to 7pm</p>
-          <p>+92 300 0000000</p>
-        </div>
+
+        <form id="bookForm" class="lg:col-span-7 bg-floor rounded-2xl p-6 sm:p-8 grid sm:grid-cols-2 gap-5 content-start">
+          <div>
+            <label for="bName" class="block text-sm font-semibold mb-1.5">Your name</label>
+            <input id="bName" required minlength="2" maxlength="80" autocomplete="name" class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm" />
+          </div>
+          <div>
+            <label for="bPhone" class="block text-sm font-semibold mb-1.5">Phone number</label>
+            <input id="bPhone" type="tel" required minlength="7" maxlength="20" autocomplete="tel" placeholder="03XX XXXXXXX" class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm" />
+          </div>
+          <div>
+            <label for="bCar" class="block text-sm font-semibold mb-1.5">Car</label>
+            <select id="bCar" class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm"></select>
+          </div>
+          <div>
+            <label for="bDate" class="block text-sm font-semibold mb-1.5">Preferred day</label>
+            <input id="bDate" type="date" required class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm" />
+          </div>
+          <div class="sm:col-span-2">
+            <button id="bookBtn" type="submit" class="w-full rounded-xl bg-brand px-5 py-3.5 font-semibold text-white hover:bg-brand-dark disabled:opacity-60">Send request on WhatsApp</button>
+            <p class="mt-3 text-sm text-muted">Your request is saved with us and WhatsApp opens with your details filled in. Nothing is sent on WhatsApp until you press send there.</p>
+            <p id="bookMsg" class="mt-2 text-sm font-semibold" role="status" aria-live="polite"></p>
+          </div>
+        </form>
       </div>
     </section>
   </main>
 
-  <footer class="text-center text-sm text-ink/50 py-6">&copy; <span id="year"></span> Apex Motors</footer>
+  <!-- Footer / contact -->
+  <footer id="contact" class="bg-ink text-white on-dark scroll-mt-16">
+    <div class="wrap py-14 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-5">
+        <p class="font-display text-xl font-semibold">Apex Motors</p>
+        <p class="mt-3 text-white/70 max-w-sm">Inspected used cars with the price shown upfront.</p>
+      </div>
+      <div class="md:col-span-3">
+        <h2 class="font-semibold">Showroom</h2>
+        <p class="mt-3 text-white/70" data-fill="address"></p>
+      </div>
+      <div class="md:col-span-2">
+        <h2 class="font-semibold">Opening hours</h2>
+        <p class="mt-3 text-white/70" data-fill="hours"></p>
+      </div>
+      <div class="md:col-span-2">
+        <h2 class="font-semibold">Contact</h2>
+        <p class="mt-3"><a data-tel class="text-white/70 hover:text-white"><span data-fill="phone"></span></a></p>
+        <p class="mt-1"><a data-wa target="_blank" rel="noopener" class="text-white/70 hover:text-white">WhatsApp</a></p>
+      </div>
+    </div>
+    <div class="border-t border-white/10">
+      <p class="wrap py-5 text-sm text-white/50">&copy; <span id="year"></span> Apex Motors. Prices and availability can change, please confirm with our team.</p>
+    </div>
+  </footer>
+
+  <!-- Car detail dialog -->
+  <dialog id="detail" class="w-[min(1080px,94vw)] max-h-[92vh] overflow-y-auto rounded-2xl bg-white text-ink">
+    <div id="detailBody"></div>
+  </dialog>
 
   <!-- Chat launcher -->
-  <button id="chatToggle"
-    class="fixed bottom-5 right-5 z-40 rounded-full bg-signal text-white font-semibold px-5 py-3 shadow-lg hover:bg-ink transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
-    Ask AI
+  <button id="chatToggle" aria-expanded="false" aria-controls="chatPanel"
+    class="on-dark fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-ink pl-4 pr-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-brand">
+    <svg class="h-5 w-5 text-[#8DB4FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+    Ask the assistant
   </button>
 
   <!-- Chat panel -->
-  <div id="chatPanel" class="hidden fixed bottom-20 right-5 z-40 w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-    <div class="flex items-center justify-between bg-ink text-white px-4 py-3">
+  <div id="chatPanel" class="hidden fixed bottom-24 right-5 z-40 w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl border border-line flex flex-col overflow-hidden">
+    <div class="on-dark flex items-center justify-between bg-ink text-white px-4 py-3">
       <div>
-        <p class="font-display font-bold leading-tight">Apex assistant</p>
-        <p class="text-xs text-white/60">Ask about cars, prices, test drives</p>
+        <p class="font-display text-sm font-semibold">Apex assistant</p>
+        <p class="text-xs text-white/60">Cars, prices and test drives</p>
       </div>
-      <button id="chatClose" aria-label="Close chat" class="text-2xl leading-none px-2 hover:text-signal">&times;</button>
+      <button id="chatClose" aria-label="Close chat" class="h-8 w-8 rounded-full text-2xl leading-none hover:bg-white/10">&times;</button>
     </div>
 
-    <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-concrete/50"></div>
+    <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-floor" aria-live="polite"></div>
 
-    <div id="quick" class="px-3 pt-2 flex flex-wrap gap-2">
-      <button class="quick rounded-full border border-ink/20 px-3 py-1 text-xs hover:border-signal hover:text-signal">Best family SUV?</button>
-      <button class="quick rounded-full border border-ink/20 px-3 py-1 text-xs hover:border-signal hover:text-signal">Mera budget 60 lakh hai</button>
-      <button class="quick rounded-full border border-ink/20 px-3 py-1 text-xs hover:border-signal hover:text-signal">Book a test drive</button>
+    <div class="px-3 pt-2 flex flex-wrap gap-2">
+      <button class="quick rounded-full border border-line px-3 py-1 text-xs hover:border-brand hover:text-brand">Best family SUV?</button>
+      <button class="quick rounded-full border border-line px-3 py-1 text-xs hover:border-brand hover:text-brand">Mera budget 60 lakh hai</button>
+      <button class="quick rounded-full border border-line px-3 py-1 text-xs hover:border-brand hover:text-brand">Book a test drive</button>
     </div>
 
     <div class="p-3 flex gap-2">
-      <input id="chatInput" type="text" placeholder="Type your question..." autocomplete="off"
-        class="flex-1 rounded-full border border-ink/20 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-signal" />
-      <button id="chatSend" class="rounded-full bg-signal text-white px-4 py-2 text-sm font-semibold hover:bg-ink transition disabled:opacity-50">Send</button>
+      <input id="chatInput" type="text" placeholder="Type your question" aria-label="Your message" autocomplete="off"
+        class="flex-1 rounded-full border border-line px-4 py-2 text-sm" />
+      <button id="chatSend" class="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50">Send</button>
     </div>
   </div>
 
   <script>
     // ================= SETTINGS =================
-    const GROQ_API_KEY = (window.APP_CONFIG && window.APP_CONFIG.GROQ_API_KEY) || "YOUR_GROQ_API_KEY"; // console.groq.com se key banao
+    // Keys config.js se aati hain (window.APP_CONFIG). Keys is file mein mat likho.
+    const CFG = window.APP_CONFIG || {};
+    const GROQ_API_KEY = CFG.GROQ_API_KEY || "YOUR_GROQ_API_KEY";
     const GROQ_MODEL = "openai/gpt-oss-20b";
     const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -149,24 +317,59 @@
       address: "Your showroom address here",
       hours: "Mon to Sat, 10am to 7pm",
       phone: "+92 300 0000000",
+      whatsapp: "923000000000", // country code ke saath, + aur space ke baghair
     };
 
-    // Sample stock: apni real cars aur prices yahan daalo
-   const cars = [
-  { id: 1, name: "Toyota Corolla Altis X", year: 2022, type: "Sedan", price: 8900000, km: 32000, trans: "Automatic", color: "#E8E8E6", colorName: "Super White", image: "images/corolla.jpg" },
-  { id: 2, name: "Honda Civic Oriel", year: 2021, type: "Sedan", price: 9450000, km: 41000, trans: "Automatic", color: "#1E3A5F", colorName: "Midnight Blue", image: "images/civic.jpg" },
-  { id: 3, name: "Suzuki Alto VXL AGS", year: 2023, type: "Hatchback", price: 3350000, km: 12000, trans: "Automatic", color: "#C0392B", colorName: "Red", image: "images/alto.jpg" },
-  { id: 4, name: "Honda City Aspire", year: 2022, type: "Sedan", price: 5900000, km: 28000, trans: "Automatic", color: "#8A9299", colorName: "Titanium Grey", image: "images/city.jpg" },
-  { id: 5, name: "Kia Sportage Alpha", year: 2022, type: "SUV", price: 7800000, km: 36000, trans: "Automatic", color: "#1A1D21", colorName: "Black", image: "images/sportage.jpg" },
-  { id: 6, name: "Toyota Yaris ATIV", year: 2021, type: "Sedan", price: 5100000, km: 45000, trans: "Automatic", color: "#9C7A4B", colorName: "Bronze", image: "images/yaris.jpg" },
-  { id: 7, name: "Hyundai Tucson AWD", year: 2023, type: "SUV", price: 10800000, km: 18000, trans: "Automatic", color: "#F2F2F0", colorName: "Pearl White", image: "images/tucson.jpg" },
-  { id: 8, name: "Suzuki Swift DLX", year: 2022, type: "Hatchback", price: 4300000, km: 30000, trans: "Manual", color: "#D6A21E", colorName: "Yellow", image: "images/swift.jpg" },
-];
+    // ================= SUPABASE =================
+    const db = (window.supabase && CFG.SUPABASE_URL && CFG.SUPABASE_KEY)
+      ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY)
+      : null;
+    let carsSource = "sample"; // "supabase" jab cars table se data aa jaye
 
+    // Sample stock: sirf tab dikhta hai jab Supabase ka cars table khali ho ya connect na ho.
+    const fallbackCars = [
+      { id: 1, name: "Toyota Corolla Altis X", year: 2022, type: "Sedan", price: 8900000, km: 32000, trans: "Automatic", fuel: "Petrol", engine: "1.8L", color: "#E8E8E6", colorName: "Super White", image: "images/corolla.jpg" },
+      { id: 2, name: "Honda Civic Oriel", year: 2021, type: "Sedan", price: 9450000, km: 41000, trans: "Automatic", fuel: "Petrol", engine: "1.5L Turbo", color: "#1E3A5F", colorName: "Midnight Blue", image: "images/civic.jpg" },
+      { id: 3, name: "Suzuki Alto VXL AGS", year: 2023, type: "Hatchback", price: 3350000, km: 12000, trans: "Automatic", fuel: "Petrol", engine: "660cc", color: "#C0392B", colorName: "Red", image: "images/alto.jpg" },
+      { id: 4, name: "Honda City Aspire", year: 2022, type: "Sedan", price: 5900000, km: 28000, trans: "Automatic", fuel: "Petrol", engine: "1.5L", color: "#8A9299", colorName: "Titanium Grey", image: "images/city.jpg" },
+      { id: 5, name: "Kia Sportage Alpha", year: 2022, type: "SUV", price: 7800000, km: 36000, trans: "Automatic", fuel: "Petrol", engine: "2.0L", color: "#1A1D21", colorName: "Black", image: "images/sportage.jpg" },
+      { id: 6, name: "Toyota Yaris ATIV", year: 2021, type: "Sedan", price: 5100000, km: 45000, trans: "Automatic", fuel: "Petrol", engine: "1.5L", color: "#9C7A4B", colorName: "Bronze", image: "images/yaris.jpg" },
+      { id: 7, name: "Hyundai Tucson AWD", year: 2023, type: "SUV", price: 10800000, km: 18000, trans: "Automatic", fuel: "Petrol", engine: "2.0L", color: "#F2F2F0", colorName: "Pearl White", image: "images/tucson.jpg" },
+      { id: 8, name: "Suzuki Swift DLX", year: 2022, type: "Hatchback", price: 4300000, km: 30000, trans: "Manual", fuel: "Petrol", engine: "1.2L", color: "#D6A21E", colorName: "Yellow", image: "images/swift.jpg" },
+    ];
+    const cars = [...fallbackCars];
+
+    const fromRow = (r) => ({
+      id: r.id, name: r.name, year: r.year, type: r.type, price: Number(r.price), km: r.km,
+      trans: r.trans, fuel: r.fuel, engine: r.engine || "", color: r.color || "#CCCCCC",
+      colorName: r.color_name || "", image: r.image || "",
+    });
+
+    async function loadCars() {
+      if (!db) return false;
+      const { data, error } = await db
+        .from("cars").select("*").eq("is_available", true)
+        .order("sort_order", { ascending: true }).order("id", { ascending: true });
+      if (error) { console.warn("Supabase cars error:", error.message); return false; }
+      if (!data || !data.length) return false;
+      cars.splice(0, cars.length, ...data.map(fromRow));
+      carsSource = "supabase";
+      return true;
+    }
+
+    const MAX_BUDGET = 12000000;
     const fmtPrice = (n) => "PKR " + n.toLocaleString("en-PK");
     const fmtKm = (n) => n.toLocaleString("en-PK") + " km";
+    const $ = (id) => document.getElementById(id);
+    const smooth = () => (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
 
-    // ================= CAR DRAWING =================
+    // ================= SHOWROOM DETAILS INTO PAGE =================
+    document.querySelectorAll("[data-fill]").forEach((el) => (el.textContent = SHOWROOM[el.dataset.fill]));
+    document.querySelectorAll("[data-tel]").forEach((el) => (el.href = "tel:" + SHOWROOM.phone.replace(/[^\d+]/g, "")));
+    document.querySelectorAll("[data-wa]").forEach((el) => (el.href = "https://wa.me/" + SHOWROOM.whatsapp));
+    $("year").textContent = new Date().getFullYear();
+
+    // ================= FALLBACK DRAWING (photo na ho to) =================
     const shapes = {
       Sedan: {
         body: "M16 88 L16 76 Q16 68 28 66 L74 60 Q92 38 126 36 L184 36 Q214 38 230 60 L272 66 Q284 68 284 78 L284 88 Z",
@@ -185,129 +388,271 @@
     function carSVG(type, color) {
       const s = shapes[type] || shapes.Sedan;
       return `
-        <svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${type} car">
-          <ellipse cx="150" cy="108" rx="122" ry="5" fill="#101418" opacity=".12"/>
-          <path class="body" d="${s.body}" fill="${color}" stroke="#101418" stroke-opacity=".25" stroke-width="1.2"/>
-          <path d="${s.win}" fill="#101418" opacity=".78"/>
-          <rect x="16" y="82" width="268" height="6" fill="#101418" opacity=".18"/>
-          <circle cx="76" cy="90" r="16" fill="#101418"/><circle cx="76" cy="90" r="7" fill="#C9CFD4"/>
-          <circle cx="224" cy="90" r="16" fill="#101418"/><circle cx="224" cy="90" r="7" fill="#C9CFD4"/>
+        <svg class="w-full h-auto max-w-md" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${type} car">
+          <ellipse cx="150" cy="108" rx="122" ry="5" fill="#0B1F3A" opacity=".12"/>
+          <path d="${s.body}" fill="${color}" stroke="#0B1F3A" stroke-opacity=".25" stroke-width="1.2"/>
+          <path d="${s.win}" fill="#0B1F3A" opacity=".78"/>
+          <rect x="16" y="82" width="268" height="6" fill="#0B1F3A" opacity=".18"/>
+          <circle cx="76" cy="90" r="16" fill="#0B1F3A"/><circle cx="76" cy="90" r="7" fill="#C9CFD4"/>
+          <circle cx="224" cy="90" r="16" fill="#0B1F3A"/><circle cx="224" cy="90" r="7" fill="#C9CFD4"/>
         </svg>`;
     }
 
-    // ================= HERO COLOR SWATCHES =================
-    const heroColors = [
-      { name: "Pearl White", hex: "#F2F2F0" },
-      { name: "Midnight Blue", hex: "#1E3A5F" },
-      { name: "Red", hex: "#C0392B" },
-      { name: "Titanium Grey", hex: "#8A9299" },
-      { name: "Yellow", hex: "#D6A21E" },
-      { name: "Black", hex: "#1A1D21" },
-    ];
-    const heroCar = document.getElementById("heroCar");
-    const heroColorName = document.getElementById("heroColorName");
-    const swatches = document.getElementById("swatches");
-
-    function setHero(c) {
-      heroCar.innerHTML = carSVG("SUV", c.hex);
-      heroColorName.textContent = c.name;
+    function imgFallback(img) {
+      const box = document.createElement("div");
+      box.className = "absolute inset-0 grid place-items-center p-8 bg-line";
+      box.innerHTML = carSVG(img.dataset.type, img.dataset.color);
+      img.replaceWith(box);
     }
-    heroColors.forEach((c, i) => {
-      const b = document.createElement("button");
-      b.setAttribute("aria-label", c.name);
-      b.className = "h-6 w-6 rounded-full border border-ink/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal";
-      b.style.background = c.hex;
-      b.onclick = () => setHero(c);
-      swatches.appendChild(b);
-      if (i === 0) setHero(c);
-    });
 
-    // ================= INVENTORY =================
-    const grid = document.getElementById("grid");
-    const filtersEl = document.getElementById("filters");
-    const sortEl = document.getElementById("sort");
-    let activeType = "All";
+    // fit = "cover" (poori jagah bharti hai, kinare kat sakte hain) ya "contain" (poori photo dikhti hai)
+    const photo = (c, fit = "cover") =>
+      c.image
+        ? `<img src="${c.image}" alt="${c.year} ${c.name} in ${c.colorName}" loading="lazy"
+             data-type="${c.type}" data-color="${c.color}" onerror="imgFallback(this)"
+             class="absolute inset-0 h-full w-full object-${fit} object-center" />`
+        : `<div class="absolute inset-0 grid place-items-center p-8 bg-line">${carSVG(c.type, c.color)}</div>`;
 
+    const dot = (c) =>
+      `<span class="inline-block h-3 w-3 rounded-full border border-ink/30" style="background:${c.color}"></span>`;
+
+    // ================= FILTER STATE =================
+    const defaults = { type: "All", gear: "Any", budget: MAX_BUDGET, sort: "default" };
+    const state = { ...defaults };
+
+    const chipsEl = $("chips");
     ["All", "Sedan", "SUV", "Hatchback"].forEach((t) => {
       const b = document.createElement("button");
       b.textContent = t;
       b.dataset.type = t;
-      b.className = "chip rounded-full px-4 py-2 text-sm font-medium border transition";
-      b.onclick = () => { activeType = t; renderCars(); };
-      filtersEl.appendChild(b);
+      b.onclick = () => { state.type = t; update(); };
+      chipsEl.appendChild(b);
     });
 
-    function renderCars() {
-      filtersEl.querySelectorAll(".chip").forEach((b) => {
-        const on = b.dataset.type === activeType;
-        b.className = "chip rounded-full px-4 py-2 text-sm font-medium border transition " +
-          (on ? "bg-ink text-white border-ink" : "bg-white border-ink/20 hover:border-ink");
+    function filtered() {
+      let list = cars.filter(
+        (c) =>
+          (state.type === "All" || c.type === state.type) &&
+          (state.gear === "Any" || c.trans === state.gear) &&
+          (state.budget >= MAX_BUDGET || c.price <= state.budget)
+      );
+      if (state.sort === "low") list = [...list].sort((a, b) => a.price - b.price);
+      if (state.sort === "high") list = [...list].sort((a, b) => b.price - a.price);
+      if (state.sort === "km") list = [...list].sort((a, b) => a.km - b.km);
+      return list;
+    }
+
+    function update() {
+      const list = filtered();
+
+      // sync controls
+      $("heroBudget").value = state.budget;
+      $("budgetLabel").textContent = state.budget >= MAX_BUDGET ? "No limit" : "Up to " + fmtPrice(state.budget);
+      $("heroType").value = state.type;
+      $("heroGear").value = state.gear;
+      $("sort").value = state.sort;
+      chipsEl.querySelectorAll("button").forEach((b) => {
+        const on = b.dataset.type === state.type;
+        b.setAttribute("aria-pressed", on);
+        b.className = "rounded-full border px-4 py-2 text-sm font-semibold " +
+          (on ? "bg-ink text-white border-ink" : "bg-white border-line hover:border-ink");
       });
 
-      let list = cars.filter((c) => activeType === "All" || c.type === activeType);
-      if (sortEl.value === "low") list = [...list].sort((a, b) => a.price - b.price);
-      if (sortEl.value === "high") list = [...list].sort((a, b) => b.price - a.price);
+      $("showBtn").textContent = list.length ? `Show ${list.length} ${list.length === 1 ? "car" : "cars"}` : "No cars match yet";
+      $("resultCount").textContent = `Showing ${list.length} of ${cars.length} cars`;
+      $("empty").classList.toggle("hidden", list.length > 0);
 
-      grid.innerHTML = list.map((c) => `
-        <article class="bg-white rounded-2xl p-5 flex flex-col">
-          <div class="rounded-xl bg-concrete/70 overflow-hidden">
-            <img src="${c.image}" alt="${c.year} ${c.name} in ${c.colorName}" loading="lazy"
-              class="w-full aspect-[3/2] object-cover"
-              onerror="this.parentElement.classList.add('px-4','pt-4'); this.outerHTML = carSVG('${c.type}','${c.color}')" />
-          </div>
-          <div class="mt-4 flex-1">
-            <h3 class="font-display text-lg font-bold leading-tight">${c.year} ${c.name}</h3>
-            <p class="mt-1 text-sm text-ink/60 flex items-center gap-2">
-              <span class="inline-block h-3 w-3 rounded-full border border-ink/30" style="background:${c.color}"></span>
-              ${c.colorName} &middot; ${c.type}
-            </p>
-            <p class="mt-1 text-sm text-ink/60">${fmtKm(c.km)} &middot; ${c.trans}</p>
-          </div>
-          <div class="mt-4 flex items-center justify-between">
-            <p class="font-display text-xl font-extrabold">${fmtPrice(c.price)}</p>
-            <button data-ask="${c.id}" class="ask rounded-full border border-ink/25 px-3 py-1.5 text-sm font-medium hover:border-signal hover:text-signal">Ask AI</button>
+      $("grid").innerHTML = list.map((c) => `
+        <article class="bg-white rounded-2xl border border-line overflow-hidden flex flex-col">
+          <button data-open="${c.id}" aria-label="View details of ${c.year} ${c.name}"
+            class="relative block w-full aspect-[3/2] bg-line overflow-hidden">
+            ${photo(c)}
+            <span class="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-semibold">${c.type}</span>
+          </button>
+          <div class="p-5 flex-1 flex flex-col">
+            <h3 class="font-display text-[15px] font-semibold leading-snug">${c.name}</h3>
+            <p class="mt-1.5 text-sm text-muted flex items-center gap-2">${dot(c)} ${c.year} model, ${c.colorName}</p>
+
+            <dl class="mt-4 grid grid-cols-3 gap-3 border-y border-line py-3 text-sm">
+              <div><dt class="text-xs text-muted">Mileage</dt><dd class="font-semibold">${fmtKm(c.km)}</dd></div>
+              <div><dt class="text-xs text-muted">Gearbox</dt><dd class="font-semibold">${c.trans}</dd></div>
+              <div><dt class="text-xs text-muted">Engine</dt><dd class="font-semibold">${c.engine}</dd></div>
+            </dl>
+
+            <p class="mt-4 font-display text-lg font-semibold">${fmtPrice(c.price)}</p>
+
+            <div class="mt-auto pt-4 grid grid-cols-2 gap-2">
+              <button data-open="${c.id}" class="rounded-lg bg-brand px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">View details</button>
+              <button data-ask="${c.id}" class="rounded-lg border border-line px-3 py-2.5 text-sm font-semibold hover:border-ink">Ask AI</button>
+            </div>
           </div>
         </article>`).join("");
-
-      grid.querySelectorAll(".ask").forEach((btn) => {
-        btn.onclick = () => {
-          const c = cars.find((x) => x.id == btn.dataset.ask);
-          openChat();
-          sendMessage(`Tell me about the ${c.year} ${c.name}`);
-        };
-      });
     }
-    sortEl.onchange = renderCars;
-    renderCars();
-    document.getElementById("year").textContent = new Date().getFullYear();
+
+    $("heroBudget").addEventListener("input", (e) => { state.budget = +e.target.value; update(); });
+    $("heroType").addEventListener("change", (e) => { state.type = e.target.value; update(); });
+    $("heroGear").addEventListener("change", (e) => { state.gear = e.target.value; update(); });
+    $("sort").addEventListener("change", (e) => { state.sort = e.target.value; update(); });
+
+    // ================= HERO FEATURED CAR =================
+    function renderHero() {
+      const f = cars[0];
+      if (!f) { $("heroPhoto").innerHTML = ""; return; }
+      $("heroPhoto").innerHTML = `
+        ${photo(f)}
+        <div class="absolute left-4 right-4 bottom-4 sm:right-auto sm:max-w-xs rounded-xl bg-white p-4 text-ink shadow-lg">
+          <p class="font-display text-sm font-semibold leading-snug">${f.year} ${f.name}</p>
+          <p class="mt-0.5 text-sm text-muted">${f.colorName}, ${fmtKm(f.km)}</p>
+          <div class="mt-3 flex items-center justify-between gap-3">
+            <p class="font-display font-semibold">${fmtPrice(f.price)}</p>
+            <button data-open="${f.id}" class="text-sm font-semibold text-brand underline underline-offset-4 hover:text-brand-dark">View details</button>
+          </div>
+        </div>`;
+    }
+
+    // ================= DETAIL DIALOG =================
+    const detail = $("detail");
+    function openDetail(id) {
+      const c = cars.find((x) => x.id == id);
+      if (!c) return;
+      const rows = [
+        ["Year", c.year], ["Body type", c.type], ["Mileage", fmtKm(c.km)],
+        ["Gearbox", c.trans], ["Fuel", c.fuel], ["Engine", c.engine], ["Colour", c.colorName],
+      ].map(([k, v]) => `<div class="flex justify-between py-2.5"><dt class="text-muted">${k}</dt><dd class="font-semibold">${v}</dd></div>`).join("");
+
+      $("detailBody").innerHTML = `
+        <div class="grid md:grid-cols-2">
+          <div class="relative bg-line aspect-[3/2] md:aspect-auto md:min-h-[460px]">${photo(c, "contain")}</div>
+          <div class="p-6 sm:p-8 flex flex-col">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="font-display text-xl font-semibold leading-snug">${c.year} ${c.name}</h3>
+                <p class="mt-1.5 text-muted flex items-center gap-2">${dot(c)} ${c.colorName}</p>
+              </div>
+              <button data-close aria-label="Close details" class="h-9 w-9 shrink-0 rounded-full border border-line text-xl leading-none hover:bg-floor">&times;</button>
+            </div>
+            <p class="mt-5 font-display text-2xl font-semibold">${fmtPrice(c.price)}</p>
+            <dl class="mt-6 divide-y divide-line border-y border-line text-sm">${rows}</dl>
+            <div class="mt-auto pt-6 grid sm:grid-cols-2 gap-3">
+              <button data-book="${c.id}" class="rounded-xl bg-brand px-4 py-3 font-semibold text-white hover:bg-brand-dark">Book a test drive</button>
+              <button data-ask="${c.id}" class="rounded-xl border border-line px-4 py-3 font-semibold hover:border-ink">Ask the assistant</button>
+            </div>
+          </div>
+        </div>`;
+      detail.showModal();
+    }
+    detail.addEventListener("click", (e) => { if (e.target === detail) detail.close(); });
+
+    // ================= BOOKING FORM (Supabase + WhatsApp) =================
+    function fillBookCars() {
+      const keep = $("bCar").value;
+      $("bCar").innerHTML =
+        `<option value="">Not sure yet</option>` +
+        cars.map((c) => `<option value="${c.id}">${c.year} ${c.name}</option>`).join("");
+      $("bCar").value = keep;
+    }
+    $("bDate").min = new Date().toISOString().split("T")[0];
+
+    $("bookForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = $("bookBtn");
+      const msgEl = $("bookMsg");
+      const name = $("bName").value.trim();
+      const phone = $("bPhone").value.trim();
+      const date = $("bDate").value;
+      const car = cars.find((c) => c.id == $("bCar").value);
+
+      // WhatsApp tab pehle hi khol lo, warna browser popup block kar deta hai
+      const wa = window.open("about:blank", "_blank");
+      btn.disabled = true;
+      msgEl.className = "mt-2 text-sm font-semibold text-muted";
+      msgEl.textContent = "Saving your request...";
+
+      let saved = false;
+      if (db) {
+        const { error } = await db.from("bookings").insert([{
+          name,
+          phone,
+          car_id: car && carsSource === "supabase" ? car.id : null,
+          car_label: car ? `${car.year} ${car.name}` : null,
+          visit_date: date,
+        }]);
+        if (error) console.warn("Supabase booking error:", error.message);
+        saved = !error;
+      }
+
+      const text =
+        `Hello ${SHOWROOM.name}, my name is ${name} (${phone}). ` +
+        `I would like to visit on ${date}` +
+        (car ? ` to see the ${car.year} ${car.name}.` : ".");
+      const url = "https://wa.me/" + SHOWROOM.whatsapp + "?text=" + encodeURIComponent(text);
+      if (wa) wa.location = url; else window.location = url;
+
+      if (saved) {
+        msgEl.className = "mt-2 text-sm font-semibold text-green-700";
+        msgEl.textContent = "Request saved. WhatsApp is opening, press send there to finish.";
+        $("bookForm").reset();
+      } else {
+        msgEl.className = "mt-2 text-sm font-semibold text-red-700";
+        msgEl.textContent = db
+          ? "We could not save your request online. Please send it on WhatsApp."
+          : "WhatsApp is opening, press send there to finish.";
+      }
+      btn.disabled = false;
+    });
+
+    // ================= CLICK ACTIONS =================
+    document.addEventListener("click", (e) => {
+      const open = e.target.closest("[data-open]");
+      const ask = e.target.closest("[data-ask]");
+      const book = e.target.closest("[data-book]");
+      if (open) return openDetail(open.dataset.open);
+      if (ask) {
+        const c = cars.find((x) => x.id == ask.dataset.ask);
+        if (!c) return;
+        detail.open && detail.close();
+        openChat();
+        return sendMessage(`Tell me about the ${c.year} ${c.name}`);
+      }
+      if (book) {
+        detail.close();
+        $("bCar").value = book.dataset.book;
+        return $("visit").scrollIntoView({ behavior: smooth() });
+      }
+      if (e.target.closest("[data-close]")) return detail.close();
+      if (e.target.closest("[data-reset]")) { Object.assign(state, defaults); update(); }
+    });
 
     // ================= AI ASSISTANT (GROQ) =================
-    const panel = document.getElementById("chatPanel");
-    const messagesEl = document.getElementById("messages");
-    const inputEl = document.getElementById("chatInput");
-    const sendBtn = document.getElementById("chatSend");
+    const panel = $("chatPanel");
+    const messagesEl = $("messages");
+    const inputEl = $("chatInput");
+    const sendBtn = $("chatSend");
+    const toggleBtn = $("chatToggle");
     const history = [];
     let busy = false;
 
-    const inventoryText = cars
-      .map((c) => `- ${c.year} ${c.name} | ${c.type} | ${c.colorName} | ${c.km} km | ${c.trans} | Petrol | PKR ${c.price}`)
-      .join("\n");
-
-    const systemPrompt = `You are the virtual sales assistant of ${SHOWROOM.name}, a used-car showroom.
+    function buildSystemPrompt() {
+      const inventoryText = cars
+        .map((c) => `- ${c.year} ${c.name} | ${c.type} | ${c.colorName} | ${c.km} km | ${c.trans} | ${c.fuel} | ${c.engine} | PKR ${c.price}`)
+        .join("\n");
+      return `You are the virtual sales assistant of ${SHOWROOM.name}, a used-car showroom.
 Rules:
 - Reply in the same language the customer writes in (English, Urdu, or Roman Urdu).
 - Keep replies short: 2 to 4 sentences. Use plain text, no markdown.
 - Only recommend cars from the inventory below. Never invent cars, prices, features or discounts. If you don't know something, say the sales team will confirm it.
 - Prices are in PKR. Convert lakh/crore when the customer uses them (1 lakh = 100,000; 1 crore = 10,000,000).
-- Encourage the customer to visit or book a test drive.
+- Encourage the customer to visit or book a test drive using the Book a visit form on the page.
 - Showroom: ${SHOWROOM.address}. Hours: ${SHOWROOM.hours}. Phone: ${SHOWROOM.phone}.
 Inventory:
 ${inventoryText}`;
+    }
+    let systemPrompt = buildSystemPrompt();
 
     function addBubble(text, who) {
       const div = document.createElement("div");
-      div.className = "max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap " +
-        (who === "user" ? "ml-auto bg-signal text-white" : "mr-auto bg-white border border-ink/10");
+      div.className = "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap " +
+        (who === "user" ? "ml-auto bg-brand text-white" : "mr-auto bg-white border border-line");
       div.textContent = text;
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -326,13 +671,13 @@ ${inventoryText}`;
 
       try {
         if (GROQ_API_KEY.startsWith("YOUR_")) {
-          throw new Error("Groq API key is not set in the code.");
+          throw new Error("Groq API key is not set. Add it in config.js.");
         }
         const res = await fetch(GROQ_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer " + GROQ_API_KEY,
+            Authorization: "Bearer " + GROQ_API_KEY.trim(),
           },
           body: JSON.stringify({
             model: GROQ_MODEL,
@@ -350,7 +695,7 @@ ${inventoryText}`;
         history.push({ role: "assistant", content: reply });
       } catch (err) {
         console.error(err);
-        bubble.textContent = "Sorry, the assistant is unavailable right now. (" + err.message + ")";
+        bubble.textContent = "The assistant is unavailable right now. " + err.message;
         history.pop();
       }
 
@@ -361,27 +706,34 @@ ${inventoryText}`;
 
     function openChat() {
       panel.classList.remove("hidden");
+      toggleBtn.setAttribute("aria-expanded", "true");
       inputEl.focus();
     }
-    function toggleChat() {
-      panel.classList.contains("hidden") ? openChat() : panel.classList.add("hidden");
+    function closeChat() {
+      panel.classList.add("hidden");
+      toggleBtn.setAttribute("aria-expanded", "false");
     }
 
-    addBubble("Assalam o Alaikum! I can help you find a car, compare prices, or book a test drive. What are you looking for?", "bot");
+    addBubble("Assalam o Alaikum! I can help you find a car, compare prices or plan a test drive. What are you looking for?", "bot");
 
-    document.getElementById("chatToggle").onclick = toggleChat;
-    document.getElementById("chatClose").onclick = () => panel.classList.add("hidden");
-    document.getElementById("headerAsk").onclick = openChat;
-    document.getElementById("heroAsk").onclick = openChat;
+    toggleBtn.onclick = () => (panel.classList.contains("hidden") ? openChat() : closeChat());
+    $("chatClose").onclick = closeChat;
+    $("headerAsk").onclick = openChat;
     sendBtn.onclick = () => { const t = inputEl.value; inputEl.value = ""; sendMessage(t); };
     inputEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); sendBtn.click(); }
     });
     document.querySelectorAll(".quick").forEach((b) => (b.onclick = () => sendMessage(b.textContent)));
+
+    // ================= START =================
+    function renderAll() {
+      renderHero();
+      fillBookCars();
+      systemPrompt = buildSystemPrompt();
+      update();
+    }
+    renderAll();                                  // pehle sample cars foran dikhao
+    loadCars().then((ok) => { if (ok) renderAll(); }); // phir Supabase se asli cars le aao
   </script>
 </body>
 </html>
-
-
-
-
